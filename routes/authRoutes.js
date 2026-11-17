@@ -8,7 +8,7 @@ const {
   resetPassword
 } = require('../controllers/authController');
 
-const { protect } = require('../middleware/authMiddleware'); 
+const { protect } = require('../middleware/auth'); 
 const { getUsers, updateUserRole, deleteUser } = require('../controllers/userController');
 
 const adminOnly = (req, res, next) =>
