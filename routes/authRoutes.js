@@ -9,7 +9,7 @@ const {
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/auth'); 
-const { getUsers, updateUserRole, deleteUser } = require('../controllers/userController');
+const { getUsers, updateUserRole, deleteUser } = require('../controllers/authController');
 
 const adminOnly = (req, res, next) =>
   String(req.user?.role || '').toLowerCase() === 'admin'
