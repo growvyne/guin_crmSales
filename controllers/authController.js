@@ -140,6 +140,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// GET /api/users  (admin) -> users + how many leads each one owns
 exports.getUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password").sort({ createdAt: -1 }).lean();
@@ -185,3 +186,56 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+// PUT /api/auth/users/:id  (admin) -> edit a user's profile
+// Body: { name, email, role, password }  (every field optional)
+exports.updateUser = async (req, res) => {
+  try {
+    const { name, email, role, password } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isSelf = sameId(user._id, req.user._id || req.user.id);
+    const update = {};
+
+    if (name !== undefined) {
+      if (!String(name).trim()) return res.status(400).json({ message: "Name cannot be empty" });
+      update.name = String(name).trim();
+    }
+
+    if (email !== undefined) {
+      const cleanEmail = String(email).trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+        return res.status(400).json({ message: "Enter a valid email address" });
+      }
+      const taken = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
+      if (taken) return res.status(400).json({ message: "That email is already in use" });
+      update.email = cleanEmail;
+    }
+
+    if (role !== undefined) {
+      const cleanRole = String(role).toLowerCase();
+      if (!["admin", "user"].includes(cleanRole)) {
+        return res.status(400).json({ message: "Role must be admin or user" });
+      }
+      if (isSelf && cleanRole !== String(user.role).toLowerCase()) {
+        return res.status(400).json({ message: "You cannot change your own role" });
+      }
+      update.role = cleanRole;
+    }
+
+    if (password) {
+      if (String(password).length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      // Hash here and update directly, so it works whether or not your model has a pre('save') hook
+      update.password = await bcrypt.hash(String(password), 10);
+    }
+
+    // findByIdAndUpdate skips save-hooks, so existing passwords are never re-hashed by mistake
+    const updated = await User.findByIdAndUpdate(user._id, update, { new: true }).select("-password");
+    res.json(updated);
+  } catch (err) {
+    console.error("updateUser error:", err);
+    res.status(500).json({ message: err.message || "Could not update user" });
+  }
+};

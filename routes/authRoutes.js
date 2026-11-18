@@ -9,7 +9,7 @@ const {
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/auth'); 
-const { getUsers, updateUserRole, deleteUser } = require('../controllers/authController');
+const { getUsers, updateUserRole, deleteUser,updateUser } = require('../controllers/authController');
 
 const adminOnly = (req, res, next) =>
   String(req.user?.role || '').toLowerCase() === 'admin'
@@ -22,9 +22,10 @@ router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 
-// Admin user-management routes (used by the Users page)
-router.get('/users', (req, res, next) => { console.log('users route hit'); next(); }, protect, adminOnly, getUsers);
-router.put('/users/:id/role', protect, adminOnly, updateUserRole);
+// Admin user-management routes
+router.get('/users', protect, adminOnly, getUsers);
+router.put('/users/:id', protect, adminOnly, updateUser);          // edit profile (name, email, role, password)
+router.put('/users/:id/role', protect, adminOnly, updateUserRole); // quick role change
 router.delete('/users/:id', protect, adminOnly, deleteUser);
 
 module.exports = router;
