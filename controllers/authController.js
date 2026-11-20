@@ -153,6 +153,78 @@ exports.getUsers = async (req, res) => {
   }
 };
 
+exports.getUserStats = async (req, res) => {
+  try {
+    // Only admin should access this
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ error: "Admins only" });
+    }
+
+    const totalUsers = await User.countDocuments({ role: "user" });
+    const totalAdmins = await User.countDocuments({ role: "admin" });
+    const total = await User.countDocuments();
+
+    res.json({
+      totalUsers,
+      totalAdmins,
+      total,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user stats" });
+  }
+};
+
+//admin add-new user
+
+exports.adminCreateUser = async (req, res) => {
+  try {
+    // 1. Optional: Verify requester is an admin (from your JWT auth middleware)
+    if (req.user && req.user.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+
+    const { name, email, password, position } = req.body;
+
+    // 2. Validate required fields
+    if (!name || !email || !password || !position) {
+      return res.status(400).json({ error: "All fields (name, email, password, position) are required." });
+    }
+
+    // 3. Check for duplicate email
+    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ error: "A user with this email already exists." });
+    }
+
+    // 4. Hash password and create user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      position: position.trim(),
+      role: "user",
+    });
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        position: newUser.position,
+        role: newUser.role,
+      },
+    });
+  } catch (err) {
+    console.error("Create user error:", err);
+    res.status(500).json({ error: "Failed to create user. Please try again." });
+  }
+};
+
 // PUT /api/users/:id/role  (admin)
 exports.updateUserRole = async (req, res) => {
   try {

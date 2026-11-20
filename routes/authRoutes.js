@@ -5,10 +5,12 @@ const {
   register,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  adminCreateUser,
+  getUserStats
 } = require('../controllers/authController');
 
-const { protect } = require('../middleware/auth'); 
+const { protect,verifyToken } = require('../middleware/auth'); 
 const { getUsers, updateUserRole, deleteUser,updateUser } = require('../controllers/authController');
 
 const adminOnly = (req, res, next) =>
@@ -23,9 +25,11 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 
 // Admin user-management routes
+router.post("/create-user", verifyToken, adminCreateUser);
+router.get("/user-stats", verifyToken, getUserStats);
 router.get('/users', protect, adminOnly, getUsers);
-router.put('/users/:id', protect, adminOnly, updateUser);          // edit profile (name, email, role, password)
-router.put('/users/:id/role', protect, adminOnly, updateUserRole); // quick role change
+router.put('/users/:id', protect, adminOnly, updateUser);          
+router.put('/users/:id/role', protect, adminOnly, updateUserRole); 
 router.delete('/users/:id', protect, adminOnly, deleteUser);
 
 module.exports = router;
