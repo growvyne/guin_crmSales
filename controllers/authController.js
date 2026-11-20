@@ -82,14 +82,14 @@ exports.forgotPassword = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: 'User with this email does not exist.' });
 
-        // Generate secure random token
         const token = crypto.randomBytes(32).toString('hex');
         user.resetPasswordToken = token;
-        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiry
+        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        // Reset URL pointing to your frontend route
-        const resetUrl = `http://localhost:5173/reset-password/${token}`;
+        // Use environment variable for frontend URL (fallback to localhost for dev)
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const resetUrl = `${clientUrl}/reset-password/${token}`;
 
         const mailOptions = {
             to: user.email,
