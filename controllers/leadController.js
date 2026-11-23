@@ -4,9 +4,8 @@ exports.getLeads = async (req, res) => {
     try {
         const { search, status, category } = req.query;
 
-        let query = req.user.role === 'admin'
-            ? {}
-            : { user: req.user.id };
+        // Allow both admins and regular users to view all leads
+        let query = {};
 
         if (status) {
             query.status = status;
